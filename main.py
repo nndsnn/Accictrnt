@@ -238,35 +238,35 @@ async def today_tasks(message: types.Message):
     # Уроки
     c.execute("SELECT * FROM lessons WHERE day=?", (today_ru,))
     lessons = c.fetchall()
-    
+
     if lessons:
         text += "📚 УРОКИ:\n"
         for lesson in lessons:
             subject = lesson[1]
             start_str = lesson[2]
             end_str = lesson[3]
-            
+
             # Конвертируем время
             start_time = datetime.datetime.strptime(start_str, "%H:%M").time()
             end_time = datetime.datetime.strptime(end_str, "%H:%M").time()
-            
+
             lesson_start = datetime.datetime.combine(today_date, start_time)
             lesson_end = datetime.datetime.combine(today_date, end_time)
-            
+
             # Простые статусы: 3 варианта
             if now < lesson_start:
                 # Урок ещё не начался
                 mins_left = int((lesson_start - now).total_seconds() / 60)
                 status = f"⏰ Через {mins_left} мин"
-                    
+
             elif lesson_start <= now <= lesson_end:
                 # Урок идёт сейчас
                 status = f"🟢 Идёт сейчас"
-                
+
             else:
                 # Урок уже прошёл
                 status = f"✓ Прошёл"
-            
+
             text += f"• {subject}: {start_str}-{end_str}\n  {status}\n"
         text += "\n"
     else:
@@ -275,7 +275,7 @@ async def today_tasks(message: types.Message):
     # ДЗ на сегодня
     c.execute("SELECT * FROM homework WHERE deadline=?", (today_str,))
     hw = c.fetchall()
-    
+
     if hw:
         text += "📝 ДЗ НА СЕГОДНЯ:\n"
         for item in hw:
@@ -290,16 +290,16 @@ async def today_tasks(message: types.Message):
         (today_str, message.from_user.id),
     )
     events = c.fetchall()
-    
+
     if events:
         text += "🎯 СОБЫТИЯ СЕГОДНЯ:\n"
         for event in events:
             title = event[1]
             event_time_str = event[3]
-            
+
             event_time = datetime.datetime.strptime(event_time_str, "%H:%M").time()
             event_datetime = datetime.datetime.combine(today_date, event_time)
-            
+
             # Простые статусы для событий
             if now < event_datetime:
                 # Событие ещё не началось
@@ -312,7 +312,7 @@ async def today_tasks(message: types.Message):
             else:
                 # Событие уже прошло
                 status = f"✓ Прошло"
-            
+
             text += f"• {title}: {event_time_str}\n  {status}\n"
     else:
         text += "🎯 Событий сегодня нет"
@@ -331,7 +331,7 @@ async def add_lesson_prompt(message: types.Message):
         "Предмет Начало Конец День\n"
         "Пример: Математика 14:30 15:15 Понедельник"
     )
-
+Ы
 
 @router.message(F.text == "➕ ДЗ")
 async def add_hw_prompt(message: types.Message):
@@ -547,7 +547,7 @@ async def toggle_notifications(callback: types.CallbackQuery):
             (user_id,)
         )
         result = c.fetchone()
-        
+
         settings = result[0].split(',') if result else ['5', '1', '1', '1']
         notifications = result[1] if result else 1
 
@@ -587,7 +587,7 @@ async def toggle_notifications(callback: types.CallbackQuery):
             "⚙️ Настройки:",
             reply_markup=keyboard
         )
-    
+
     await callback.answer()
 
 
@@ -672,7 +672,7 @@ async def save_lesson(callback: types.CallbackQuery):
         (user_id,)
     )
     result = c.fetchone()
-    
+
     settings = result[0].split(',') if result else ['5', '1', '1', '1']
     notifications = result[1] if result else 1
 
@@ -739,7 +739,7 @@ async def save_hw(callback: types.CallbackQuery):
         (user_id,)
     )
     result = c.fetchone()
-    
+
     settings = result[0].split(',') if result else ['5', '1', '1', '1']
     notifications = result[1] if result else 1
 
@@ -820,7 +820,7 @@ async def save_event_days(callback: types.CallbackQuery):
             ],
         ]
     )
-    
+
     await callback.message.edit_text(
         "Настройки событий:",
         reply_markup=keyboard
@@ -870,7 +870,7 @@ async def save_event_hours(callback: types.CallbackQuery):
             ],
         ]
     )
-    
+
     await callback.message.edit_text(
         "Настройки событий:",
         reply_markup=keyboard
@@ -985,7 +985,7 @@ async def check_notifications():
             now = datetime.datetime.now()
             today = now.date()
             today_str = today.strftime("%Y-%m-%d")
-            
+
             # Для отладки
             current_time = now.strftime('%H:%M:%S')
             print(f"[{current_time}] Проверка уведомлений...")
@@ -1023,27 +1023,27 @@ async def check_notifications():
                     subject = lesson[1]
                     start_time = lesson[2]
                     end_time = lesson[3]
-                    
+
                     # Создаем уникальный ключ для этого уведомления
                     lesson_key = f"{user_id}_lesson_{subject}_{start_time}"
-                    
+
                     # Проверяем время до начала урока
                     start_datetime = datetime.datetime.strptime(start_time, "%H:%M")
                     lesson_start = datetime.datetime.combine(today, start_datetime.time())
-                    
+
                     # Сколько минут осталось до урока
                     time_diff_minutes = (lesson_start - now).total_seconds() / 60
-                    
+
                     # ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ РОВНО ЗА N МИНУТ
                     # Проверяем, что до урока осталось БОЛЬШЕ (N-1) минут, но НЕ БОЛЬШЕ N минут
                     # Например, для 5 минут: 4 < time_diff <= 5
                     if lesson_min - 1 < time_diff_minutes <= lesson_min:
                         if lesson_key not in sent_notifications:
                             sent_notifications[lesson_key] = now
-                            
+
                             # Рассчитываем, через сколько минут
                             mins_display = int(time_diff_minutes) + 1 if time_diff_minutes % 1 > 0 else int(time_diff_minutes)
-                            
+
                             try:
                                 await bot.send_message(
                                     user_id,
@@ -1054,48 +1054,48 @@ async def check_notifications():
                                 print(f"Ошибка отправки уведомления об уроке: {e}")
 
                 # ==================== УВЕДОМЛЕНИЯ О ДЗ ====================
-                
+
                 # ДЗ на сегодня - отправляем только в 8:00 утра
                 if now.hour == 8 and now.minute == 0:
                     hw_today_key = f"{user_id}_hw_today_{today_str}"
-                    
+
                     if hw_today_key not in sent_notifications:
                         c.execute(
                             "SELECT * FROM homework WHERE deadline=?",
                             (today_str,)
                         )
                         hw_today = c.fetchall()
-                        
+
                         if hw_today:
                             hw_text = "🔥 ДЗ НА СЕГОДНЯ:\n"
                             for hw in hw_today:
                                 hw_text += f"• {hw[1]}: {hw[2]}\n"
-                            
+
                             try:
                                 await bot.send_message(user_id, hw_text)
                                 sent_notifications[hw_today_key] = now
                             except Exception as e:
                                 print(f"Ошибка отправки уведомления о ДЗ на сегодня: {e}")
-                
+
                 # ДЗ за N дней до дедлайна - отправляем только в 8:00 утра
                 if hw_days > 0 and now.hour == 8 and now.minute == 0:
                     reminder_date = today + datetime.timedelta(days=hw_days)
                     reminder_str = reminder_date.strftime("%Y-%m-%d")
-                    
+
                     hw_reminder_key = f"{user_id}_hw_reminder_{reminder_str}"
-                    
+
                     if hw_reminder_key not in sent_notifications:
                         c.execute(
                             "SELECT * FROM homework WHERE deadline=?",
                             (reminder_str,)
                         )
                         hw_reminder = c.fetchall()
-                        
+
                         if hw_reminder:
                             hw_text = f"⏰ ДЗ через {hw_days} дн:\n"
                             for hw in hw_reminder:
                                 hw_text += f"• {hw[1]}: {hw[2]}\n"
-                            
+
                             try:
                                 await bot.send_message(user_id, hw_text)
                                 sent_notifications[hw_reminder_key] = now
@@ -1103,32 +1103,32 @@ async def check_notifications():
                                 print(f"Ошибка отправки уведомления о ДЗ: {e}")
 
                 # ==================== УВЕДОМЛЕНИЯ О СОБЫТИЯХ ====================
-                
+
                 # События за N дней - отправляем только в 9:00 утра
                 if event_days > 0 and now.hour == 9 and now.minute == 0:
                     event_reminder_date = today + datetime.timedelta(days=event_days)
                     event_reminder_str = event_reminder_date.strftime("%Y-%m-%d")
-                    
+
                     event_days_key = f"{user_id}_event_days_{event_reminder_str}"
-                    
+
                     if event_days_key not in sent_notifications:
                         c.execute(
                             "SELECT * FROM events WHERE user_id=? AND event_date=?",
                             (user_id, event_reminder_str)
                         )
                         events_reminder = c.fetchall()
-                        
+
                         if events_reminder:
                             events_text = f"📅 Событие через {event_days} дн:\n"
                             for event in events_reminder:
                                 events_text += f"• {event[1]}: {event[2]} {event[3]}\n"
-                            
+
                             try:
                                 await bot.send_message(user_id, events_text)
                                 sent_notifications[event_days_key] = now
                             except Exception as e:
                                 print(f"Ошибка отправки уведомления о событиях: {e}")
-                
+
                 # События за N часов - проверяем все события пользователя
                 if event_hours > 0:
                     c.execute(
@@ -1136,22 +1136,22 @@ async def check_notifications():
                         (user_id,)
                     )
                     all_events = c.fetchall()
-                    
+
                     for event in all_events:
                         event_title = event[1]
                         event_date_str = event[2]
                         event_time_str = event[3]
-                        
+
                         event_datetime = datetime.datetime.strptime(
                             f"{event_date_str} {event_time_str}",
                             "%Y-%m-%d %H:%M"
                         )
                         time_diff = event_datetime - now
                         hours_diff = time_diff.total_seconds() / 3600
-                        
+
                         # Создаем уникальный ключ для этого уведомления
                         event_hours_key = f"{user_id}_event_hours_{event_title}_{event_date_str}_{event_time_str}"
-                        
+
                         # Проверяем, что до события осталось примерно N часов
                         # Для 1 часа: ±5 минут
                         # Для 2+ часов: ±30 минут
@@ -1169,7 +1169,7 @@ async def check_notifications():
                                     )
                                 except Exception as e:
                                     print(f"Ошибка отправки уведомления о событии: {e}")
-                        
+
                         elif event_hours > 1:
                             # N часов ±30 минут
                             if (event_hours - 0.5) <= hours_diff <= (event_hours + 0.5) and event_hours_key not in sent_notifications:
@@ -1190,7 +1190,7 @@ async def check_notifications():
             for key, timestamp in sent_notifications.items():
                 if (now - timestamp).total_seconds() > 86400:  # 24 часа
                     keys_to_remove.append(key)
-            
+
             for key in keys_to_remove:
                 del sent_notifications[key]
 
@@ -1206,14 +1206,11 @@ async def check_notifications():
 
 
 async def main():
-    """Основная функция запуска бота"""
     print("🤖 Бот запущен!")
-    print("⚙️ Система уведомлений активирована")
-    print("✅ Уведомления работают для пользователей с включенными настройками")
-    
+
     # Запускаем фоновую задачу проверки уведомлений
     asyncio.create_task(check_notifications())
-    
+
     # Запускаем обработку сообщений
     await dp.start_polling(bot)
 
